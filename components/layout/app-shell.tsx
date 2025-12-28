@@ -1,13 +1,16 @@
 "use client"
 
 import type React from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const navItems = [
     { href: "/", label: "Início" },
@@ -70,10 +73,44 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Mobile menu button */}
-            <Button variant="outline" size="sm" className="md:hidden bg-transparent">
-              MENU
-            </Button>
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 hover:bg-secondary rounded-sm transition-colors"
+              aria-label="Menu"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
+
+          {/* Mobile Navigation Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden mt-4 pb-4 border-t border-border pt-4">
+              <nav className="flex flex-col gap-2">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={cn(
+                      "px-4 py-3 text-sm font-medium transition-colors hover:bg-secondary rounded-sm",
+                      pathname === item.href ? "text-primary bg-secondary" : "text-muted-foreground",
+                    )}
+                    style={{ fontFamily: "var(--font-oswald)" }}
+                  >
+                    {item.label.toUpperCase()}
+                  </Link>
+                ))}
+                <div className="flex flex-col gap-2 mt-4 px-4">
+                  <Button variant="outline" size="sm" style={{ fontFamily: "var(--font-oswald)" }} className="w-full">
+                    ENTRAR
+                  </Button>
+                  <Button size="sm" style={{ fontFamily: "var(--font-oswald)" }} className="w-full">
+                    CADASTRAR
+                  </Button>
+                </div>
+              </nav>
+            </div>
+          )}
         </div>
       </header>
 
