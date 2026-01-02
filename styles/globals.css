@@ -4,6 +4,20 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* Paleta UFC/Fight - cores reutilizáveis */
+  --fight-black: #0B0B0D;
+  --fight-surface: #141418;
+  --fight-border: #1C1C20;
+  --fight-border-hover: #2C2C30;
+  --fight-text: #F2F2F2;
+  --fight-text-secondary: #808088;
+  --fight-text-muted: #4A4A52;
+  --fight-accent: #E11D48;
+  --fight-accent-hover: #C01638;
+  --fight-accent-active: #A01230;
+  --fight-accent-disabled: #4A1A24;
+  --fight-accent-border: rgba(225, 29, 72, 0.3);
+  
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -75,7 +89,7 @@
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
+  --font-sans: var(--font-inter), sans-serif;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -121,5 +135,77 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  /* Font utilities - padrão do projeto */
+  .font-display {
+    font-family: var(--font-oswald), sans-serif;
+  }
+  .font-ui {
+    font-family: var(--font-inter), sans-serif;
+  }
+  
+  /* Color utilities - paleta UFC/Fight */
+  .bg-fight-black { background-color: var(--fight-black); }
+  .bg-fight-surface { background-color: var(--fight-surface); }
+  .bg-fight-accent { background-color: var(--fight-accent); }
+  .bg-fight-accent-disabled { background-color: var(--fight-accent-disabled); }
+  
+  .text-fight { color: var(--fight-text); }
+  .text-fight-secondary { color: var(--fight-text-secondary); }
+  .text-fight-muted { color: var(--fight-text-muted); }
+  .text-fight-accent { color: var(--fight-accent); }
+  
+  .border-fight { border-color: var(--fight-border); }
+  .border-fight-hover { border-color: var(--fight-border-hover); }
+  .border-fight-accent { border-color: var(--fight-accent); }
+  .border-fight-accent-dim { border-color: var(--fight-accent-border); }
+  
+  .placeholder-fight-muted::placeholder { color: var(--fight-text-muted); }
+  
+  /* Hover states */
+  .hover\:bg-fight-accent-hover:hover { background-color: var(--fight-accent-hover); }
+  .hover\:border-fight-hover:hover { border-color: var(--fight-border-hover); }
+  .hover\:border-fight-accent:hover { border-color: var(--fight-accent); }
+  .hover\:text-fight:hover { color: var(--fight-text); }
+  .hover\:text-fight-accent:hover { color: var(--fight-accent); }
+  
+  /* Active states */
+  .active\:bg-fight-accent-active:active { background-color: var(--fight-accent-active); }
+  
+  /* Focus states */
+  .focus\:border-fight-accent:focus { border-color: var(--fight-accent); }
+  .focus\:ring-fight-accent:focus { --tw-ring-color: var(--fight-accent); }
+  
+  /* Background patterns - grain/noise texture reutilizável */
+  .bg-grain-noise {
+    position: relative;
+  }
+  .bg-grain-noise::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 128px 128px;
+    pointer-events: none;
+  }
+  
+  /* Legacy grain-overlay (compatibilidade) */
+  .grain-overlay {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 128px 128px;
+  }
+  
+  /* Background gradiente UFC/Fight */
+  .bg-fight-gradient {
+    background: linear-gradient(to bottom, var(--fight-black) 0%, var(--fight-surface) 50%, var(--fight-black) 100%);
+  }
+  
+  .bg-fight-gradient-br {
+    background: linear-gradient(to bottom right, var(--fight-black) 0%, var(--fight-surface) 50%, var(--fight-black) 100%);
   }
 }

@@ -2,17 +2,18 @@
 
 import { useState } from "react"
 import { use } from "react"
-import { AppShell } from "@/components/layout/app-shell"
 import { EventBanner } from "@/components/domain/event-banner"
 import { FightCard } from "@/components/domain/fight-card"
 import { Button } from "@/components/ui/button"
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription, ModalFooter } from "@/components/ui/modal"
 import { Input } from "@/components/ui/input"
 import { mockEvents, mockBouts } from "@/lib/mock-data"
+import { cn } from "@/lib/utils"
+import { AppShell } from "@/components/layout/app-shell"
 
 export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const [activeTab, setActiveTab] = useState<"card" | "categories" | "inscriptions" | "results">("card")
+  const [activeTab, setActiveTab] = useState<"card" | "categories" | "inscriptions">("card")
   const [showInscriptionModal, setShowInscriptionModal] = useState(false)
   const [showMatchmakingModal, setShowMatchmakingModal] = useState(false)
 
@@ -21,13 +22,14 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
   if (!event) {
     return (
-      <AppShell>
-        <div className="container mx-auto px-4 py-20 text-center">
-          <h1 className="text-3xl font-bold mb-4" style={{ fontFamily: "var(--font-oswald)" }}>
+      <div className="relative min-h-screen bg-fight-black bg-grain-noise">
+        <div className="absolute inset-0 bg-fight-gradient opacity-30 pointer-events-none" />
+        <div className="relative z-10 container mx-auto px-4 py-20 text-center">
+          <h1 className="font-display text-3xl font-bold text-fight uppercase">
             EVENTO NÃO ENCONTRADO
           </h1>
         </div>
-      </AppShell>
+      </div>
     )
   }
 
@@ -37,156 +39,169 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
   return (
     <AppShell>
-      <EventBanner event={event} />
+      <div className="relative min-h-screen bg-fight-black bg-grain-noise">
+        <div className="absolute inset-0 bg-fight-gradient opacity-30 pointer-events-none" />
+        
+        <div className="relative z-10">
+          <EventBanner event={event} />
 
-      {/* CTA Buttons */}
-      <div className="bg-secondary/30 border-b-2 border-border">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-wrap gap-3">
-            <Button onClick={() => setShowInscriptionModal(true)} style={{ fontFamily: "var(--font-oswald)" }}>
-              INSCREVER-SE
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowMatchmakingModal(true)}
-              className="border-2 bg-transparent"
-              style={{ fontFamily: "var(--font-oswald)" }}
-            >
-              MONTAR CARD
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => console.log("TODO: Publicar card")}
-              className="border-2 bg-transparent"
-              style={{ fontFamily: "var(--font-oswald)" }}
-            >
-              PUBLICAR CARD
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="border-b-2 border-border mb-8">
-          <div className="flex gap-1">
-            {["card", "categories", "inscriptions", "results"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab as any)}
-                className={`px-6 py-3 font-bold text-sm transition-colors ${
-                  activeTab === tab
-                    ? "border-b-2 border-primary text-primary"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                style={{ fontFamily: "var(--font-oswald)" }}
+        {/* CTA Buttons */}
+        <div className="bg-fight-surface border-b border-fight">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex flex-wrap gap-3">
+              <Button 
+                onClick={() => setShowInscriptionModal(true)} 
+                className="bg-fight-accent hover:bg-fight-accent-hover text-white font-display uppercase"
               >
-                {tab === "card" && "CARD"}
-                {tab === "categories" && "CATEGORIAS"}
-                {tab === "inscriptions" && "INSCRITOS"}
-                {tab === "results" && "RESULTADOS"}
-              </button>
-            ))}
+                INSCREVER-SE
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowMatchmakingModal(true)}
+                className="border border-fight hover:border-fight-hover bg-transparent text-fight font-display uppercase"
+              >
+                CASAR LUTAS
+              </Button>
+            </div>
           </div>
         </div>
 
-        {/* Tab Content */}
-        {activeTab === "card" && (
-          <div className="space-y-8">
-            {mainEvent && (
-              <div>
-                <h2
-                  className="text-3xl font-bold text-primary mb-4 text-expanded"
-                  style={{ fontFamily: "var(--font-oswald)" }}
+        {/* Tabs */}
+        <div className="container mx-auto px-4 py-8">
+          <div className="border-b border-fight mb-8">
+            <div className="flex gap-1">
+              {["card", "categories", "inscriptions"].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab as any)}
+                  className={cn(
+                    "px-6 py-3 font-display text-sm uppercase transition-colors",
+                    activeTab === tab
+                      ? "border-b-2 border-fight-accent text-fight-accent"
+                      : "text-fight-secondary hover:text-fight"
+                  )}
                 >
-                  MAIN EVENT
-                </h2>
-                <FightCard bout={mainEvent} size="lg" />
-              </div>
-            )}
-            {coMain && (
-              <div>
-                <h2
-                  className="text-3xl font-bold text-primary mb-4 text-expanded"
-                  style={{ fontFamily: "var(--font-oswald)" }}
-                >
-                  CO-MAIN EVENT
-                </h2>
-                <FightCard bout={coMain} size="md" />
-              </div>
-            )}
-            {prelims.length > 0 && (
-              <div>
-                <h2
-                  className="text-3xl font-bold text-primary mb-4 text-expanded"
-                  style={{ fontFamily: "var(--font-oswald)" }}
-                >
-                  CARD PRELIMINAR
-                </h2>
-                <div className="space-y-4">
-                  {prelims.map((bout) => (
-                    <FightCard key={bout.id} bout={bout} size="sm" />
-                  ))}
+                  {tab === "card" && "CARD"}
+                  {tab === "categories" && "CATEGORIAS"}
+                  {tab === "inscriptions" && "INSCRITOS"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tab Content */}
+          {activeTab === "card" && (
+            <div className="space-y-8">
+              {mainEvent && (
+                <div>
+                  <h2 className="font-display text-2xl font-bold text-fight-accent mb-4 uppercase">
+                    MAIN EVENT
+                  </h2>
+                  <div className="bg-fight-surface border border-fight rounded-lg p-6">
+                    <FightCard bout={mainEvent} size="lg" />
+                  </div>
+                </div>
+              )}
+              {coMain && (
+                <div>
+                  <h2 className="font-display text-2xl font-bold text-fight-accent mb-4 uppercase">
+                    CO-MAIN EVENT
+                  </h2>
+                  <div className="bg-fight-surface border border-fight rounded-lg p-6">
+                    <FightCard bout={coMain} size="md" />
+                  </div>
+                </div>
+              )}
+              {prelims.length > 0 && (
+                <div>
+                  <h2 className="font-display text-xl font-bold text-fight mb-4 uppercase">
+                    CARD PRELIMINAR
+                  </h2>
+                  <div className="space-y-3">
+                    {prelims.map((bout) => (
+                      <div key={bout.id} className="bg-fight-surface border border-fight rounded-lg p-4">
+                        <FightCard bout={bout} size="sm" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {eventBouts.length === 0 && (
+                <div className="text-center py-12 bg-fight-surface border border-fight rounded-lg">
+                  <p className="font-ui text-lg text-fight-secondary">Card ainda não montado</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "categories" && (
+            <div className="space-y-4">
+              <div className="bg-fight-surface border border-fight rounded-lg p-6">
+                <h3 className="font-display text-lg font-bold text-fight uppercase mb-4">Muay Thai</h3>
+                <div className="grid gap-3">
+                  <div className="flex items-center justify-between p-3 bg-fight-black rounded border border-fight hover:border-fight-hover transition-colors">
+                    <span className="font-ui text-fight">Peso Galo - até 61kg</span>
+                    <span className="font-ui text-sm text-fight-secondary">3 inscritos</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-fight-black rounded border border-fight hover:border-fight-hover transition-colors">
+                    <span className="font-ui text-fight">Peso Leve - até 70kg</span>
+                    <span className="font-ui text-sm text-fight-secondary">5 inscritos</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-fight-black rounded border border-fight hover:border-fight-hover transition-colors">
+                    <span className="font-ui text-fight">Peso Médio - até 80kg</span>
+                    <span className="font-ui text-sm text-fight-secondary">4 inscritos</span>
+                  </div>
                 </div>
               </div>
-            )}
-            {eventBouts.length === 0 && (
-              <div className="text-center py-12 bg-card border-2 border-border">
-                <p className="text-xl text-muted-foreground">Card ainda não montado</p>
+              <div className="bg-fight-surface border border-fight rounded-lg p-6">
+                <h3 className="font-display text-lg font-bold text-fight uppercase mb-4">Kickboxing</h3>
+                <div className="grid gap-3">
+                  <div className="flex items-center justify-between p-3 bg-fight-black rounded border border-fight hover:border-fight-hover transition-colors">
+                    <span className="font-ui text-fight">Peso Leve - até 70kg</span>
+                    <span className="font-ui text-sm text-fight-secondary">2 inscritos</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-fight-black rounded border border-fight hover:border-fight-hover transition-colors">
+                    <span className="font-ui text-fight">Peso Pesado - acima de 90kg</span>
+                    <span className="font-ui text-sm text-fight-secondary">1 inscrito</span>
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
 
-        {activeTab === "categories" && (
-          <div className="bg-card border-2 border-border p-8 text-center">
-            <p className="text-muted-foreground">Categorias disponíveis serão exibidas aqui</p>
-          </div>
-        )}
-
-        {activeTab === "inscriptions" && (
-          <div className="bg-card border-2 border-border p-8 text-center">
-            <p className="text-muted-foreground">Lista de inscritos será exibida aqui</p>
-          </div>
-        )}
-
-        {activeTab === "results" && (
-          <div className="space-y-4">
-            {eventBouts
-              .filter((b) => b.result)
-              .map((bout) => (
-                <div key={bout.id} className="bg-card border-2 border-border p-6">
+          {activeTab === "inscriptions" && (
+            <div className="space-y-3">
+              {[
+                { nome: "Thiago Ferreira", modalidade: "Muay Thai", peso: "81kg", categoria: "Peso Médio" },
+                { nome: "Lucas Silva", modalidade: "Kickboxing", peso: "75kg", categoria: "Peso Leve" },
+                { nome: "Marina Costa", modalidade: "Muay Thai", peso: "57kg", categoria: "Peso Galo" },
+                { nome: "Pedro Santos", modalidade: "Muay Thai", peso: "69kg", categoria: "Peso Leve" },
+              ].map((atleta, idx) => (
+                <div key={idx} className="bg-fight-surface border border-fight rounded-lg p-4 hover:border-fight-hover transition-colors">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-bold">
-                        {bout.athleteRed.name} vs {bout.athleteBlue.name}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {bout.modality} • {bout.weightClass}
+                      <h4 className="font-display text-lg text-fight uppercase">{atleta.nome}</h4>
+                      <p className="font-ui text-sm text-fight-secondary">
+                        {atleta.modalidade} • {atleta.categoria} • {atleta.peso}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-primary">
-                        {bout.result?.winner === "RED" ? bout.athleteRed.name : bout.athleteBlue.name}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {bout.result?.method} • R{bout.result?.round}
-                      </p>
-                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-fight hover:border-fight-accent text-fight font-ui"
+                    >
+                      Ver Perfil
+                    </Button>
                   </div>
                 </div>
               ))}
-            {eventBouts.filter((b) => b.result).length === 0 && (
-              <div className="bg-card border-2 border-border p-8 text-center">
-                <p className="text-muted-foreground">Resultados ainda não disponíveis</p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
 
-      {/* Inscription Modal */}
-      <Modal open={showInscriptionModal} onOpenChange={setShowInscriptionModal}>
+        </div>
+
+        {/* Inscription Modal */}
+        <Modal open={showInscriptionModal} onOpenChange={setShowInscriptionModal}>
         <ModalContent>
           <ModalHeader>
             <ModalTitle>INSCREVER-SE NO EVENTO</ModalTitle>
@@ -228,8 +243,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         </ModalContent>
       </Modal>
 
-      {/* Matchmaking Modal */}
-      <Modal open={showMatchmakingModal} onOpenChange={setShowMatchmakingModal}>
+        {/* Matchmaking Modal */}
+        <Modal open={showMatchmakingModal} onOpenChange={setShowMatchmakingModal}>
         <ModalContent>
           <ModalHeader>
             <ModalTitle>MONTAR CARD</ModalTitle>
@@ -261,6 +276,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           </ModalFooter>
         </ModalContent>
       </Modal>
+        </div>
+      </div>
     </AppShell>
   )
 }

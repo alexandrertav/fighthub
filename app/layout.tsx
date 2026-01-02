@@ -47,7 +47,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className={`${oswald.variable} ${inter.variable}`}>
-      <body className={`font-sans antialiased`} style={{ fontFamily: "var(--font-inter)" }}>
+      <body className={`font-sans antialiased`}>
         {children}
         <Analytics />
       </body>

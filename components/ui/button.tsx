@@ -5,28 +5,29 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+  "font-display inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-bold uppercase tracking-wide transition-colors disabled:pointer-events-none disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none",
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+        default: 'bg-[#E11D48] text-[#F2F2F2] hover:bg-[#C01638] active:bg-[#A01230] disabled:bg-[#4A1A24] disabled:text-[#F2F2F2] focus:ring-2 focus:ring-[#E11D48] focus:ring-offset-2 focus:ring-offset-[#141418] rounded-lg',
         destructive:
-          'bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60',
+          'bg-[#E11D48] text-[#F2F2F2] hover:bg-[#C01638] active:bg-[#A01230] disabled:bg-[#4A1A24] disabled:text-[#F2F2F2] focus:ring-2 focus:ring-[#E11D48] rounded-lg',
         outline:
-          'border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50',
+          'border border-[#1C1C20] bg-transparent text-[#F2F2F2] hover:bg-[#141418] hover:border-[#2C2C30] active:bg-[#1C1C20] disabled:border-[#1C1C20] disabled:text-[#4A4A52] focus:ring-2 focus:ring-[#E11D48] rounded-lg',
         secondary:
-          'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+          'bg-[#141418] text-[#F2F2F2] border border-[#1C1C20] hover:bg-[#1C1C20] hover:border-[#2C2C30] disabled:bg-[#141418] disabled:text-[#4A4A52] focus:ring-2 focus:ring-[#1C1C20] rounded-lg',
         ghost:
-          'hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
-        link: 'text-primary underline-offset-4 hover:underline',
+          'bg-transparent text-[#808088] hover:bg-[#141418] hover:text-[#F2F2F2] disabled:text-[#4A4A52] rounded-lg',
+        link: 'font-ui normal-case tracking-normal text-[#E11D48] hover:text-[#C01638] underline-offset-4 hover:underline disabled:text-[#4A4A52]',
       },
       size: {
-        default: 'h-9 px-4 py-2 has-[>svg]:px-3',
-        sm: 'h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5',
-        lg: 'h-10 rounded-md px-6 has-[>svg]:px-4',
-        icon: 'size-9',
+        default: 'h-10 px-4 py-2',
+        sm: 'h-8 text-xs px-3',
+        lg: 'h-14 px-6 text-base',
+        xl: 'h-16 px-8 text-lg',
+        icon: 'size-10',
         'icon-sm': 'size-8',
-        'icon-lg': 'size-10',
+        'icon-lg': 'size-14',
       },
     },
     defaultVariants: {
