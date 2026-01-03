@@ -1,4 +1,4 @@
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
+const API = process.env.NEXT_PUBLIC_API_URL || "";
 
 // Server-side fetch (for server components)
 export async function apiGet<T>(path: string): Promise<T> {

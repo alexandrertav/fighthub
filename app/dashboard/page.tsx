@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { 
@@ -21,30 +21,76 @@ import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import BottomNav from "@/components/layout/bottom-nav"
 import StripedPattern from "@/components/ui/striped-pattern"
+import { apiClient } from "@/lib/api"
 
 export default function DashboardPage() {
-  const [selectedEvent, setSelectedEvent] = useState("xfest-12")
+  const [selectedEvent, setSelectedEvent] = useState("")
   const [activePage, setActivePage] = useState("dashboard")
+  const [loading, setLoading] = useState(true)
+  
+  // Real data from API
+  const [events, setEvents] = useState<any[]>([])
+  const [stats, setStats] = useState({
+    inscricoes: 0,
+    pagos: 0,
+    pendentes: 0,
+    lutasMontadas: 0,
+    estornos: 0,
+  })
+  const [atividadeRecente, setAtividadeRecente] = useState<any[]>([])
 
-  // Mock data
-  const events = [
-    { id: "xfest-12", name: "XFEST 12 - Porto Alegre", status: "Inscrições abertas" },
-    { id: "copa-rs", name: "Copa RS de Muay Thai", status: "Em planejamento" },
-  ]
+  // TODO: Pegar promoterId do contexto de autenticação
+  const PROMOTER_ID = "678d1234567890abcdef1234" // Temporário - usar o ID real do banco
 
-  const stats = {
-    inscricoes: 128,
-    pagamentosPendentes: 9,
-    lutasMontadas: 42,
-    estornos: 3,
+  useEffect(() => {
+    loadEvents()
+  }, [])
+
+  useEffect(() => {
+    if (selectedEvent) {
+      loadEventData(selectedEvent)
+    }
+  }, [selectedEvent])
+
+  async function loadEvents() {
+    try {
+      setLoading(true)
+      const data = await apiClient.get<any[]>(`/api/promoter/events?promoterId=${PROMOTER_ID}`)
+      setEvents(data)
+      if (data.length > 0 && !selectedEvent) {
+        setSelectedEvent(data[0].id)
+      }
+    } catch (error) {
+      console.error("Erro ao carregar eventos:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function loadEventData(eventId: string) {
+    try {
+      // Buscar estatísticas
+      const statsData = await apiClient.get<any>(`/api/promoter/events/${eventId}/stats`)
+      setStats({
+        inscricoes: statsData.registrations.total,
+        pagos: statsData.registrations.paid,
+        pendentes: statsData.registrations.pending,
+        lutasMontadas: statsData.matches.confirmed,
+        estornos: statsData.registrations.refunded,
+      })
+
+      // Buscar atividade recente
+      const activityData = await apiClient.get<any>(`/api/promoter/events/${eventId}/activity?limit=5`)
+      setAtividadeRecente(activityData.activities)
+    } catch (error) {
+      console.error("Erro ao carregar dados do evento:", error)
+    }
   }
 
   const pendencias = [
-    "Pagamento pendente",
-    "Documento faltando",
-    "Categoria/altura incompatível",
-    "Pedido de estorno",
-  ]
+    stats.pendentes > 0 ? `${stats.pendentes} pagamento(s) pendente(s)` : null,
+    stats.estornos > 0 ? `${stats.estornos} pedido(s) de estorno` : null,
+  ].filter(Boolean)
 
   const proximosPassos = [
     "Fechar inscrições",
@@ -53,12 +99,21 @@ export default function DashboardPage() {
     "Check-in/pesagem",
   ]
 
-  const atividadeRecente = [
-    "Última inscrição: João Silva - 15min atrás",
-    "Pagamento confirmado: Maria Santos - 1h atrás",
-    "Estorno solicitado: Pedro Costa - 2h atrás",
-    "Alteração de categoria: Ana Lima - 3h atrás",
-  ]
+  const currentEvent = events.find(e => e.id === selectedEvent)
+  
+  function formatTimeAgo(timestamp: string) {
+    const now = new Date()
+    const then = new Date(timestamp)
+    const diffMs = now.getTime() - then.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    
+    if (diffMins < 1) return "agora"
+    if (diffMins < 60) return `${diffMins}min atrás`
+    const diffHours = Math.floor(diffMins / 60)
+    if (diffHours < 24) return `${diffHours}h atrás`
+    const diffDays = Math.floor(diffHours / 24)
+    return `${diffDays}d atrás`
+  }
 
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -115,7 +170,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-card border-2 border-border p-4">
               <div className="text-3xl font-bold text-primary mb-1" style={{ fontFamily: "var(--font-oswald)" }}>
-                0
+                {loading ? "..." : stats.inscricoes}
               </div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Atletas Inscritos</p>
               <div className="mt-3 h-2 bg-secondary">
@@ -124,7 +179,7 @@ export default function DashboardPage() {
             </div>
             <div className="bg-card border-2 border-border p-4">
               <div className="text-3xl font-bold mb-1" style={{ fontFamily: "var(--font-oswald)" }}>
-                0
+                {loading ? "..." : stats.lutasMontadas}
               </div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Lutas Casadas</p>
               <div className="mt-3 h-2 bg-secondary">
@@ -139,32 +194,54 @@ export default function DashboardPage() {
               AÇÕES RÁPIDAS
             </h3>
             <div className="space-y-3">
-              {acoesRapidas.map((acao, i) => {
-                const isPriority = acao.title.includes('pendentes') || acao.title.includes('Conflitos')
-                const count = acao.subtitle.match(/\d+/)?.[0] || '0'
-                return (
-                  <button
-                    key={i}
-                    className="w-full bg-card border-2 border-border hover:border-primary/50 p-4 transition-all group text-left"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <p className="font-semibold text-sm mb-1">{acao.title}</p>
-                        <p className="text-xs text-muted-foreground">{acao.subtitle}</p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className={cn(
-                          "text-2xl font-bold",
-                          isPriority ? "text-primary" : "text-foreground"
-                        )} style={{ fontFamily: "var(--font-oswald)" }}>
-                          {count}
-                        </span>
-                        <ChevronDown className="w-4 h-4 text-muted-foreground rotate-[-90deg]" />
-                      </div>
+              {stats.pendentes > 0 && (
+                <button className="w-full bg-card border-2 border-border hover:border-primary/50 p-4 transition-all group text-left">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm mb-1">Pagamentos pendentes</p>
+                      <p className="text-xs text-muted-foreground">{stats.pendentes} atleta(s) aguardando</p>
                     </div>
-                  </button>
-                )
-              })}
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl font-bold text-primary" style={{ fontFamily: "var(--font-oswald)" }}>
+                        {stats.pendentes}
+                      </span>
+                      <ChevronDown className="w-4 h-4 text-muted-foreground rotate-[-90deg]" />
+                    </div>
+                  </div>
+                </button>
+              )}
+              {stats.estornos > 0 && (
+                <button className="w-full bg-card border-2 border-border hover:border-primary/50 p-4 transition-all group text-left">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm mb-1">Pedidos de estorno</p>
+                      <p className="text-xs text-muted-foreground">{stats.estornos} caso(s)</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl font-bold text-primary" style={{ fontFamily: "var(--font-oswald)" }}>
+                        {stats.estornos}
+                      </span>
+                      <ChevronDown className="w-4 h-4 text-muted-foreground rotate-[-90deg]" />
+                    </div>
+                  </div>
+                </button>
+              )}
+              {stats.inscricoes > stats.lutasMontadas && (
+                <button className="w-full bg-card border-2 border-border hover:border-primary/50 p-4 transition-all group text-left">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm mb-1">Atletas sem luta</p>
+                      <p className="text-xs text-muted-foreground">{stats.inscricoes - stats.lutasMontadas} aguardando matchmaking</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl font-bold" style={{ fontFamily: "var(--font-oswald)" }}>
+                        {stats.inscricoes - stats.lutasMontadas}
+                      </span>
+                      <ChevronDown className="w-4 h-4 text-muted-foreground rotate-[-90deg]" />
+                    </div>
+                  </div>
+                </button>
+              )}
             </div>
           </section>
         </main>
@@ -258,10 +335,10 @@ export default function DashboardPage() {
                   onChange={(e) => setSelectedEvent(e.target.value)}
                   className="w-full h-12 px-4 pr-10 rounded-lg border-2 border-border bg-background text-sm appearance-none cursor-pointer hover:border-primary/50 transition-colors"
                 >
-                  <option value="" disabled>Selecionar evento (dropdown)</option>
+                  <option value="" disabled>Selecionar evento</option>
                   {events.map((event) => (
                     <option key={event.id} value={event.id}>
-                      Ex.: {event.name} ({event.status})
+                      {event.title} - {event.status === "DRAFT" ? "Rascunho" : event.status === "PUBLISHED" ? "Publicado" : "Finalizado"}
                     </option>
                   ))}
                 </select>
@@ -283,7 +360,7 @@ export default function DashboardPage() {
               <div className="border-2 border-dashed border-border rounded-lg p-6 bg-card/30">
                 <h3 className="text-sm font-medium text-muted-foreground mb-2">Inscritos</h3>
                 <p className="text-3xl font-bold" style={{ fontFamily: "var(--font-oswald)" }}>
-                  {stats.inscricoes}
+                  {loading ? "..." : stats.inscricoes}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">Número + variação</p>
               </div>
@@ -291,7 +368,7 @@ export default function DashboardPage() {
               <div className="border-2 border-dashed border-border rounded-lg p-6 bg-card/30">
                 <h3 className="text-sm font-medium text-muted-foreground mb-2">Pagamentos confirmados</h3>
                 <p className="text-3xl font-bold" style={{ fontFamily: "var(--font-oswald)" }}>
-                  {stats.pagamentosPendentes}
+                  {loading ? "..." : stats.pagos}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">Número + variação</p>
               </div>
@@ -299,7 +376,7 @@ export default function DashboardPage() {
               <div className="border-2 border-dashed border-border rounded-lg p-6 bg-card/30">
                 <h3 className="text-sm font-medium text-muted-foreground mb-2">Lutas montadas</h3>
                 <p className="text-3xl font-bold" style={{ fontFamily: "var(--font-oswald)" }}>
-                  {stats.lutasMontadas}
+                  {loading ? "..." : stats.lutasMontadas}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">Número + variação</p>
               </div>
@@ -313,11 +390,15 @@ export default function DashboardPage() {
                   <h3 className="font-bold" style={{ fontFamily: "var(--font-oswald)" }}>
                     Pendências
                   </h3>
-                  <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-                    {pendencias.map((item, i) => (
-                      <li key={i}>• {item}</li>
-                    ))}
-                  </ul>
+                  {pendencias.length > 0 ? (
+                    <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                      {pendencias.map((item, i) => (
+                        <li key={i}>• {item}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-3 text-sm text-muted-foreground">Nenhuma pendência no momento</p>
+                  )}
                 </div>
                 <div className="p-6">
                   <h4 className="font-bold mb-3 text-sm" style={{ fontFamily: "var(--font-oswald)" }}>
@@ -327,11 +408,15 @@ export default function DashboardPage() {
                     Lista: últimas inscrições, pagamentos, estornos, alterações de lutas
                   </p>
                   <div className="space-y-2">
-                    {atividadeRecente.map((item, i) => (
-                      <p key={i} className="text-xs text-muted-foreground">
-                        {item}
-                      </p>
-                    ))}
+                    {atividadeRecente.length > 0 ? (
+                      atividadeRecente.map((activity, i) => (
+                        <p key={i} className="text-xs text-muted-foreground">
+                          {activity.description} - {formatTimeAgo(activity.timestamp)}
+                        </p>
+                      ))
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Nenhuma atividade recente</p>
+                    )}
                   </div>
                 </div>
               </div>

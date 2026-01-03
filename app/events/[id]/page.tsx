@@ -45,7 +45,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         setError(null)
         
         // Busca o evento pelo slug (id é o slug na URL)
-        const eventData = await apiClient.get<Event>(`/public/events/${id}`)
+        const eventData = await apiClient.get<Event>(`/api/public/events/by-slug/${id}`)
         setEvent(eventData)
         
         // TODO: Implementar endpoints de bouts e registrations no backend
@@ -81,7 +81,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       setSubmitting(true)
       
       const response = await apiClient.post<{ registrationId: string; checkoutUrl: string }>(
-        `/public/events/${event.id}/registrations`,
+        `/api/public/events/${event.id}/registrations`,
         {
           fullName: formData.fullName,
           age: parseInt(formData.age),

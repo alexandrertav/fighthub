@@ -1,27 +1,108 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { use } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Check } from "lucide-react"
+import { ArrowLeft, Check, Trash2, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { apiClient } from "@/lib/api"
 
-export default function AtletaDetalhesPage() {
+export default function AtletaDetalhesPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
   const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState(false)
+  const [atleta, setAtleta] = useState<any>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-  // Mock data - seria substituído por dados reais da API
-  const atleta = {
-    id: "1",
-    nome: "Thiago Ferreira",
-    modalidade: "Muay Thai",
-    categoria: "Categoria 81",
-    status: "pago",
-    statusLabel: "PAGO",
-    documentos: {
-      rgCpf: { enviado: true, status: "aprovado" },
-      atestadoMedico: { enviado: false, status: "pendente" },
-    },
+  useEffect(() => {
+    loadAthleteData()
+  }, [id])
+
+  async function loadAthleteData() {
+    try {
+      setLoading(true)
+      const data = await apiClient.get<any>(`/api/public/registrations/${id}`)
+      console.log("📋 Dados do atleta:", data)
+      setAtleta(data)
+    } catch (error) {
+      console.error("❌ Erro ao carregar atleta:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!confirm("Tem certeza que deseja remover este atleta? Esta ação não pode ser desfeita.")) {
+      return
+    }
+
+    try {
+      setDeleting(true)
+      // Fazer requisição DELETE manualmente
+      const res = await fetch(`/api/public/registrations/${id}`, {
+        method: "DELETE",
+      })
+      
+      if (!res.ok) {
+        throw new Error("Erro ao remover atleta")
+      }
+      
+      alert("Atleta removido com sucesso!")
+      router.push("/dashboard/inscritos")
+    } catch (error) {
+      console.error("❌ Erro ao remover atleta:", error)
+      alert("Erro ao remover atleta. Tente novamente.")
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  function getStatusLabel(status: string) {
+    const labels: any = {
+      PENDING_PAYMENT: "Pendente",
+      PAID: "Pago",
+      REFUNDED: "Estornado",
+      CANCELED: "Cancelado",
+    }
+    return labels[status] || status
+  }
+
+  function getMatchStatusLabel(matchStatus: string) {
+    const labels: any = {
+      SEM_LUTA: "Sem luta",
+      LUTA_SUGERIDA: "Luta sugerida",
+      LUTA_CONFIRMADA: "Luta confirmada",
+    }
+    return labels[matchStatus] || matchStatus
+  }
+
+  function getModalityLabel(modality: string) {
+    return modality === "MUAY_THAI" ? "Muay Thai" : "Boxe"
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!atleta) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">Atleta não encontrado</p>
+          <Button onClick={() => router.back()}>Voltar</Button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -49,92 +130,141 @@ export default function AtletaDetalhesPage() {
         {/* Content */}
         <main className="flex-1 p-4 overflow-auto">
           {/* Athlete Info Card */}
-          <div className="bg-card border-2 border-border rounded-3xl p-6 mb-6">
+          <div className="bg-card border-2 border-border rounded-lg p-6 mb-6">
             <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: "var(--font-oswald)" }}>
-              {atleta.nome}
+              {atleta.fullName.toUpperCase()}
             </h2>
-            <div className="flex items-center gap-3">
+            <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                {atleta.modalidade} • {atleta.categoria} • {atleta.status}
+                {getModalityLabel(atleta.modality)} • {atleta.level} • {atleta.team}
               </p>
-              <div className="px-3 py-1 rounded-full border-2 border-border bg-background">
-                <span className="text-xs font-bold" style={{ fontFamily: "var(--font-oswald)" }}>
-                  {atleta.statusLabel}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={cn(
+                  "px-3 py-1 text-xs font-bold uppercase",
+                  atleta.status === "PAID" ? "bg-green-500/10 text-green-500" :
+                  atleta.status === "PENDING_PAYMENT" ? "bg-yellow-500/10 text-yellow-500" :
+                  "bg-red-500/10 text-red-500"
+                )}>
+                  {getStatusLabel(atleta.status)}
+                </span>
+                <span className={cn(
+                  "px-3 py-1 text-xs font-bold uppercase",
+                  atleta.matchStatus === "LUTA_CONFIRMADA" ? "bg-blue-500/10 text-blue-500" :
+                  atleta.matchStatus === "LUTA_SUGERIDA" ? "bg-purple-500/10 text-purple-500" :
+                  "bg-gray-500/10 text-gray-500"
+                )}>
+                  {getMatchStatusLabel(atleta.matchStatus)}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Documentos Section */}
-          <div className="mb-6">
-            <h3 className="text-sm font-bold mb-3" style={{ fontFamily: "var(--font-oswald)" }}>
-              Documentos
+          {/* Dados Pessoais */}
+          <div className="bg-card border-2 border-border rounded-lg p-6 mb-6">
+            <h3 className="text-lg font-bold mb-4" style={{ fontFamily: "var(--font-oswald)" }}>
+              DADOS PESSOAIS
             </h3>
-            <div className="space-y-3">
-              {/* RG/CPF */}
-              <div className="bg-card border-2 border-border rounded-3xl p-4 flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-sm">RG/CPF</p>
-                  <p className="text-xs text-muted-foreground">Enviado</p>
-                </div>
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Check className="w-5 h-5 text-primary" />
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Idade</p>
+                <p className="font-semibold">{atleta.age} anos</p>
               </div>
-
-              {/* Atestado Médico */}
-              <div className="bg-card border-2 border-border rounded-3xl p-4 flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-sm">Atestado médico</p>
-                  <p className="text-xs text-muted-foreground">Pendente</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-sm font-medium"
-                >
-                  Cobrar
-                </Button>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Peso</p>
+                <p className="font-semibold">{atleta.weight} kg</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Altura</p>
+                <p className="font-semibold">{atleta.height} cm</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Total de Lutas</p>
+                <p className="font-semibold">{atleta.totalFights}</p>
               </div>
             </div>
+            {atleta.recordNotes && (
+              <div className="mt-4">
+                <p className="text-xs text-muted-foreground mb-1">Cartel/Observações</p>
+                <p className="text-sm">{atleta.recordNotes}</p>
+              </div>
+            )}
           </div>
+
+          {/* Informações de Pagamento */}
+          {atleta.payment && (
+            <div className="bg-card border-2 border-border rounded-lg p-6 mb-6">
+              <h3 className="text-lg font-bold mb-4" style={{ fontFamily: "var(--font-oswald)" }}>
+                PAGAMENTO
+              </h3>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Valor</p>
+                  <p className="font-semibold">R$ {atleta.payment.amount.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Status</p>
+                  <p className="font-semibold">{atleta.payment.status}</p>
+                </div>
+                {atleta.payment.mpPaymentId && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">ID Mercado Pago</p>
+                    <p className="text-xs font-mono">{atleta.payment.mpPaymentId}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Data do Pagamento</p>
+                  <p className="text-sm">{new Date(atleta.payment.updatedAt).toLocaleString('pt-BR')}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Evento */}
+          <div className="bg-card border-2 border-border rounded-lg p-6 mb-6">
+            <h3 className="text-lg font-bold mb-4" style={{ fontFamily: "var(--font-oswald)" }}>
+              EVENTO
+            </h3>
+            <div className="space-y-2">
+              <p className="font-semibold">{atleta.eventTitle}</p>
+              <Link 
+                href={`/events/${atleta.eventSlug}`}
+                className="text-sm text-primary hover:underline"
+              >
+                Ver página do evento →
+              </Link>
+            </div>
+          </div>
+
 
           {/* Ações Section */}
           <div className="mb-6">
-            <h3 className="text-sm font-bold mb-3" style={{ fontFamily: "var(--font-oswald)" }}>
-              Ações
+            <h3 className="text-lg font-bold mb-4" style={{ fontFamily: "var(--font-oswald)" }}>
+              AÇÕES
             </h3>
             <div className="space-y-3">
-              {/* Casar luta */}
+              {/* Remover Atleta */}
               <Button
-                variant="outline"
-                className="w-full h-12 rounded-3xl border-2 text-sm font-medium"
+                onClick={handleDelete}
+                disabled={deleting}
+                variant="destructive"
+                className="w-full h-12 rounded-lg text-sm font-medium"
                 style={{ fontFamily: "var(--font-oswald)" }}
               >
-                Casar luta
+                {deleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    REMOVENDO...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    REMOVER ATLETA
+                  </>
+                )}
               </Button>
-
-              {/* Marcar pendência */}
-              <Button
-                variant="outline"
-                className="w-full h-12 rounded-3xl border-2 text-sm font-medium"
-                style={{ fontFamily: "var(--font-oswald)" }}
-              >
-                Marcar pendência
-              </Button>
-
-              {/* Estornar pagamento */}
-              <Button
-                variant="outline"
-                className="w-full h-auto py-4 px-6 rounded-3xl border-2 text-left flex flex-col items-start gap-1"
-              >
-                <span className="text-sm font-medium" style={{ fontFamily: "var(--font-oswald)" }}>
-                  Estornar pagamento (se não achar luta)
-                </span>
-                <span className="text-xs text-muted-foreground font-normal">
-                  Opção: pagamento • reembolso total
-                </span>
-              </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                Esta ação removerá o atleta e seus dados de pagamento permanentemente
+              </p>
             </div>
           </div>
         </main>

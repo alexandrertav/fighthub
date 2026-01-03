@@ -27,7 +27,7 @@ export default function PaymentStatusPage({ params }: { params: Promise<{ id: st
           registrationId: string
           status: string
           matchStatus: string
-        }>(`/public/registrations/${registrationId}/status`)
+        }>(`/api/public/registrations/${registrationId}/status`)
         
         setStatus({
           registrationStatus: data.status,
