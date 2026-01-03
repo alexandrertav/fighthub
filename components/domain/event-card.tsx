@@ -12,6 +12,9 @@ interface EventCardProps {
 }
 
 export function EventCard({ event }: EventCardProps) {
+  // Usa slug se disponível, senão usa id
+  const eventPath = event.slug || event.id
+  
   return (
     <div className="bg-card border-2 border-border hover:border-primary transition-colors overflow-hidden group">
       {/* Event banner strip */}
@@ -19,25 +22,24 @@ export function EventCard({ event }: EventCardProps) {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-medium text-expanded" style={{ fontFamily: "var(--font-oswald)" }}>
-              {format(new Date(event.date), "d 'DE' MMMM 'DE' yyyy", { locale: ptBR }).toUpperCase()}
+              {event.date ? format(new Date(event.date), "d 'DE' MMMM 'DE' yyyy", { locale: ptBR }).toUpperCase() : "DATA A DEFINIR"}
             </p>
             <p className="text-xs opacity-80">
-              {event.city} • {event.venue}
+              {event.location || "Local a definir"}
             </p>
           </div>
           <Badge
             variant={
-              event.status === "INSCRICOES_ABERTAS"
+              event.status === "PUBLISHED"
                 ? "default"
-                : event.status === "SANCIONADO"
+                : event.status === "DRAFT"
                   ? "secondary"
                   : "outline"
             }
           >
-            {event.status === "INSCRICOES_ABERTAS" && "INSCRIÇÕES ABERTAS"}
-            {event.status === "SANCIONADO" && "SANCIONADO"}
-            {event.status === "FINALIZADO" && "FINALIZADO"}
-            {event.status === "CONFIRMADO" && "CONFIRMADO"}
+            {event.status === "PUBLISHED" && "INSCRIÇÕES ABERTAS"}
+            {event.status === "DRAFT" && "RASCUNHO"}
+            {event.status === "FINISHED" && "FINALIZADO"}
           </Badge>
         </div>
       </div>
@@ -49,9 +51,15 @@ export function EventCard({ event }: EventCardProps) {
             className="text-4xl font-bold text-condensed leading-none mb-2 group-hover:text-primary transition-colors"
             style={{ fontFamily: "var(--font-oswald)" }}
           >
-            {event.name.toUpperCase()}
+            {event.title.toUpperCase()}
           </h3>
-          <p className="text-sm text-muted-foreground">{event.federation}</p>
+          <div className="flex gap-2 mt-2">
+            {event.allowedModalities.map((mod) => (
+              <Badge key={mod} variant="outline" className="text-xs">
+                {mod === "MUAY_THAI" ? "MUAY THAI" : mod}
+              </Badge>
+            ))}
+          </div>
         </div>
 
         {/* Pattern overlay */}
@@ -71,20 +79,21 @@ export function EventCard({ event }: EventCardProps) {
 
       {/* Actions */}
       <div className="p-4 space-y-2">
-        <Link href={`/events/${event.id}`} className="block">
+        <Link href={`/events/${eventPath}`} className="block">
           <Button className="w-full" style={{ fontFamily: "var(--font-oswald)" }}>
             VER EVENTO
           </Button>
         </Link>
-        {event.status === "INSCRICOES_ABERTAS" && (
-          <Button
-            variant="outline"
-            className="w-full bg-transparent"
-            onClick={() => console.log("TODO: Inscrever-se")}
-            style={{ fontFamily: "var(--font-oswald)" }}
-          >
-            INSCREVER-SE
-          </Button>
+        {event.status === "PUBLISHED" && (
+          <Link href={`/events/${eventPath}?inscricao=true`} className="block">
+            <Button
+              variant="outline"
+              className="w-full bg-transparent"
+              style={{ fontFamily: "var(--font-oswald)" }}
+            >
+              INSCREVER-SE
+            </Button>
+          </Link>
         )}
       </div>
     </div>

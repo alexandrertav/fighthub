@@ -26,12 +26,13 @@ export interface Athlete {
 
 export interface Event {
   id: string
-  name: string
-  date: string
-  city: string
-  venue: string
-  federation: string
-  status: "INSCRICOES_ABERTAS" | "FINALIZADO" // Only these two statuses
+  slug: string
+  title: string
+  price: number
+  allowedModalities: ("BOXE" | "MUAY_THAI")[]
+  date: string | null
+  location: string | null
+  status: "DRAFT" | "PUBLISHED" | "FINISHED"
 }
 
 export interface Bout {
@@ -87,4 +88,40 @@ export interface RankingEntry {
   }
   level: "Amador" | "Semi-Pro" | "Profissional" // Fighter level
   modality: "Muay Thai" | "Kickboxing" // Only these two
+}
+
+export interface Registration {
+  id: string
+  eventId: string
+  fullName: string
+  age: number
+  weight: number
+  height: number
+  totalFights: number
+  recordNotes?: string
+  team: string
+  level: "AMADOR" | "SEMI_PRO"
+  modality: "BOXE" | "MUAY_THAI"
+  status: "PENDING_PAYMENT" | "PAID" | "REFUNDED" | "CANCELED"
+  matchStatus: "SEM_LUTA" | "LUTA_SUGERIDA" | "LUTA_CONFIRMADA"
+  paymentId?: string
+}
+
+export interface CreateRegistrationDto {
+  fullName: string
+  age: number
+  weight: number
+  height: number
+  totalFights: number
+  recordNotes?: string
+  team: string
+  level: "AMADOR" | "SEMI_PRO"
+  modality: "BOXE" | "MUAY_THAI"
+}
+
+export interface RegistrationResponse {
+  registrationId: string
+  checkoutUrl: string
+  status: "PENDING_PAYMENT"
+  matchStatus: "SEM_LUTA"
 }

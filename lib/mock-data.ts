@@ -31,13 +31,14 @@ export const mockAthletes: Athlete[] = [
 
 export const mockEvents: Event[] = [
   {
-    id: "xfest-2026",
-    name: "XFEST STRIKING",
+    id: "6958b35b9919123678e02029",
+    slug: "xfest-striking-x4rhc",
+    title: "XFEST STRIKING",
+    price: 150.00,
+    allowedModalities: ["MUAY_THAI", "BOXE"],
     date: "2026-02-08",
-    city: "Cachoeirinha",
-    venue: "Distrito Arena",
-    federation: "",
-    status: "INSCRICOES_ABERTAS",
+    location: "Cachoeirinha - Distrito Arena",
+    status: "PUBLISHED",
   },
 ]
 

@@ -1,0 +1,8 @@
+{
+  "promoterId": "678d1234567890abcdef1234",
+  "title": "XFEST STRIKING",
+  "price": 100.00,
+  "allowedModalities": ["MUAY_THAI", "BOXE"],
+  "date": "2026-02-08T20:00:00.000Z",
+  "location": "Cachoeirinha - Distrito Arena"
+}
