@@ -19,11 +19,36 @@ export class MercadoPagoService {
     title: string;
     amount: number;
     registrationId: string;
+    payer?: {
+      name: string;
+      email: string;
+    };
   }): Promise<{ preferenceId: string; checkoutUrl: string }> {
     const body: any = {
-      items: [{ title: params.title, quantity: 1, unit_price: params.amount }],
+      items: [
+        { 
+          title: params.title, 
+          quantity: 1, 
+          unit_price: params.amount,
+          currency_id: "BRL"
+        }
+      ],
       external_reference: params.registrationId,
+      payment_methods: {
+        excluded_payment_types: [],
+        excluded_payment_methods: [],
+        installments: 12,
+        default_installments: 1
+      },
+      statement_descriptor: "FIGHTHUB",
     };
+
+    if (params.payer) {
+      body.payer = {
+        name: params.payer.name,
+        email: params.payer.email,
+      };
+    }
 
     if (this.frontendUrl) {
       const successUrl = `${this.frontendUrl}/inscricao/${params.registrationId}/aguardando?result=success`;

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,50 +16,64 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import BottomNav from "@/components/layout/bottom-nav"
+import { apiClient } from "@/lib/api"
 
 export default function LutasPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [activePage, setActivePage] = useState("lutas")
-  const [nivelFilter, setNivelFilter] = useState<"amador" | "profissional">("profissional")
+  const [nivelFilter, setNivelFilter] = useState<"AMADOR" | "SEMI_PRO">("SEMI_PRO")
+  const [loading, setLoading] = useState(true)
+  const [selectedEvent, setSelectedEvent] = useState("")
+  const [events, setEvents] = useState<any[]>([])
+  const [categorias, setCategorias] = useState<any[]>([])
 
-  // Mock data
-  const categorias = [
-    {
-      id: "muay-thai-81kg-pro",
-      modalidade: "Muay Thai",
-      peso: "81kg",
-      nivel: "profissional",
-      inscritos: 6,
-    },
-    {
-      id: "muay-thai-70kg-pro",
-      modalidade: "Muay Thai",
-      peso: "70kg",
-      nivel: "profissional",
-      inscritos: 8,
-    },
-    {
-      id: "muay-thai-61kg-ama",
-      modalidade: "Muay Thai",
-      peso: "61kg",
-      nivel: "amador",
-      inscritos: 10,
-    },
-    {
-      id: "kickboxing-75kg-ama",
-      modalidade: "Kickboxing",
-      peso: "75kg",
-      nivel: "amador",
-      inscritos: 4,
-    },
-  ]
+  // TODO: Pegar promoterId do contexto de autenticação
+  const PROMOTER_ID = "678d1234567890abcdef1234"
+
+  useEffect(() => {
+    loadEvents()
+  }, [])
+
+  useEffect(() => {
+    if (selectedEvent) {
+      loadCategories()
+    }
+  }, [selectedEvent, nivelFilter])
+
+  async function loadEvents() {
+    try {
+      const data = await apiClient.get<any[]>(`/api/promoter/events?promoterId=${PROMOTER_ID}`)
+      setEvents(data)
+      if (data.length > 0 && !selectedEvent) {
+        setSelectedEvent(data[0].id)
+      }
+    } catch (error) {
+      console.error("❌ Erro ao carregar eventos:", error)
+    }
+  }
+
+  async function loadCategories() {
+    try {
+      setLoading(true)
+      const data = await apiClient.get<any>(`/api/promoter/events/${selectedEvent}/matchmaking?level=${nivelFilter}`)
+      console.log("🎯 Categorias:", data)
+      setCategorias(data.categories || [])
+    } catch (error) {
+      console.error("❌ Erro ao carregar categorias:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function getModalityLabel(modality: string) {
+    return modality === "MUAY_THAI" ? "Muay Thai" : "Boxe"
+  }
 
 
   const categoriasFiltradas = categorias.filter((cat) => {
-    const matchNivel = cat.nivel === nivelFilter
-    const searchText = `${cat.modalidade} ${cat.peso}`.toLowerCase()
+    const searchText = `${getModalityLabel(cat.modality)} ${cat.weightRange}`.toLowerCase()
     const matchSearch = searchText.includes(searchQuery.toLowerCase())
-    return matchNivel && matchSearch
+    return matchSearch
   })
 
   return (
@@ -79,13 +93,30 @@ export default function LutasPage() {
             <p className="text-sm text-muted-foreground">Escolha uma categoria para montar cards</p>
           </div>
 
+          {/* Event Selector */}
+          {events.length > 1 && (
+            <div className="mb-4">
+              <select
+                value={selectedEvent}
+                onChange={(e) => setSelectedEvent(e.target.value)}
+                className="w-full bg-card border-2 border-border p-3 text-sm"
+              >
+                {events.map((event) => (
+                  <option key={event.id} value={event.id}>
+                    {event.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Filtro de Nível */}
           <div className="grid grid-cols-2 gap-4 mb-6">
             <button
-              onClick={() => setNivelFilter("profissional")}
+              onClick={() => setNivelFilter("SEMI_PRO")}
               className={cn(
                 "bg-card border-2 p-4 transition-all",
-                nivelFilter === "profissional"
+                nivelFilter === "SEMI_PRO"
                   ? "border-primary"
                   : "border-border hover:border-primary/50"
               )}
@@ -93,13 +124,13 @@ export default function LutasPage() {
               <div className="text-2xl font-bold mb-1" style={{ fontFamily: "var(--font-oswald)" }}>
                 PRO
               </div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Profissional</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Semi-Profissional</p>
             </button>
             <button
-              onClick={() => setNivelFilter("amador")}
+              onClick={() => setNivelFilter("AMADOR")}
               className={cn(
                 "bg-card border-2 p-4 transition-all",
-                nivelFilter === "amador"
+                nivelFilter === "AMADOR"
                   ? "border-primary"
                   : "border-border hover:border-primary/50"
               )}
@@ -116,29 +147,41 @@ export default function LutasPage() {
             <h3 className="text-2xl font-bold text-condensed mb-4" style={{ fontFamily: "var(--font-oswald)" }}>
               CATEGORIAS
             </h3>
-            <div className="space-y-3">
-              {categoriasFiltradas.map((cat) => (
-                <Link
-                  key={cat.id}
-                  href={`/dashboard/lutas/${cat.id}`}
-                  className="block"
-                >
-                  <div className="bg-card border-2 border-border hover:border-primary/50 p-4 transition-all">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h4 className="text-lg font-bold uppercase mb-1" style={{ fontFamily: "var(--font-oswald)" }}>
-                          {cat.modalidade}
-                        </h4>
-                        <p className="text-sm text-muted-foreground">
-                          {cat.peso} • {cat.inscritos} inscritos
-                        </p>
+            {loading ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Carregando...</p>
+              </div>
+            ) : categoriasFiltradas.length === 0 ? (
+              <div className="text-center py-12 bg-card border-2 border-border rounded-lg">
+                <p className="text-muted-foreground">
+                  Nenhuma categoria disponível. Aguarde mais inscrições pagas.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {categoriasFiltradas.map((cat) => (
+                  <Link
+                    key={cat.id}
+                    href={`/dashboard/lutas/${encodeURIComponent(cat.id)}?eventId=${selectedEvent}`}
+                    className="block"
+                  >
+                    <div className="bg-card border-2 border-border hover:border-primary/50 p-4 transition-all">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h4 className="text-lg font-bold uppercase mb-1" style={{ fontFamily: "var(--font-oswald)" }}>
+                            {getModalityLabel(cat.modality)}
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            {cat.weightRange}kg • {cat.athletes.length} atletas
+                          </p>
+                        </div>
+                        <ChevronDown className="w-4 h-4 text-muted-foreground rotate-[-90deg]" />
                       </div>
-                      <ChevronDown className="w-4 h-4 text-muted-foreground rotate-[-90deg]" />
                     </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </section>
         </main>
 

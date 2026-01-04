@@ -1,31 +1,115 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { use } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, AlertCircle } from "lucide-react"
+import { ArrowLeft, AlertCircle, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { apiClient } from "@/lib/api"
 
 export default function CasarLutasBoard({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+  const { id: categoryId } = use(params)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const eventId = searchParams.get("eventId")
+  
   const [selectedAtletas, setSelectedAtletas] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+  const [creating, setCreating] = useState(false)
+  const [categoria, setCategoria] = useState<any>(null)
+  const [atletas, setAtletas] = useState<any[]>([])
 
-  // Mock data - seria substituído por dados reais da API
-  const categoria = {
-    id,
-    modalidade: "Muay Thai",
-    peso: "81kg",
-    nivel: "Profissional",
+  useEffect(() => {
+    if (eventId) {
+      loadCategory()
+    }
+  }, [eventId, categoryId])
+
+  async function loadCategory() {
+    try {
+      setLoading(true)
+      const data = await apiClient.get<any>(`/api/promoter/events/${eventId}/matchmaking`)
+      console.log("🎯 Dados matchmaking:", data)
+      
+      // Encontrar a categoria específica
+      const cat = data.categories.find((c: any) => c.id === decodeURIComponent(categoryId))
+      
+      if (cat) {
+        setCategoria(cat)
+        setAtletas(cat.athletes)
+      }
+    } catch (error) {
+      console.error("❌ Erro ao carregar categoria:", error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const atletas = [
-    { id: "1", nome: "Alexandre", equipe: "Tormann", peso: "81kg", vitorias: 12, derrotas: 3 },
-    { id: "2", nome: "Pedro", equipe: "Elite Thai", peso: "80kg", vitorias: 8, derrotas: 2 },
-  ]
+  async function handleConfirmarLuta() {
+    if (selectedAtletas.length !== 2) return
 
-  const hasConflict = selectedAtletas.length === 2 && selectedAtletas.includes("2") && selectedAtletas.includes("3")
+    try {
+      setCreating(true)
+      const response = await fetch("/api/promoter/matches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          athlete1Id: selectedAtletas[0],
+          athlete2Id: selectedAtletas[1],
+          confirmed: true,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Erro ao criar luta")
+      }
+
+      alert("✅ Luta confirmada com sucesso!")
+      router.push("/dashboard/lutas")
+    } catch (error: any) {
+      console.error("❌ Erro ao confirmar luta:", error)
+      alert(error.message || "Erro ao confirmar luta")
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  function getModalityLabel(modality: string) {
+    return modality === "MUAY_THAI" ? "Muay Thai" : "Boxe"
+  }
+
+  // Verificar compatibilidade de peso
+  const hasConflict = selectedAtletas.length === 2 && (() => {
+    const athlete1 = atletas.find(a => a.id === selectedAtletas[0])
+    const athlete2 = atletas.find(a => a.id === selectedAtletas[1])
+    if (!athlete1 || !athlete2) return false
+    const weightDiff = Math.abs(athlete1.weight - athlete2.weight)
+    return weightDiff > 3 // Alerta se diferença > 3kg
+  })()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!categoria) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">Categoria não encontrada</p>
+          <Button onClick={() => router.back()}>Voltar</Button>
+        </div>
+      </div>
+    )
+  }
 
   const handleAtletaClick = (atletaId: string) => {
     setSelectedAtletas((prev) => {
@@ -57,10 +141,10 @@ export default function CasarLutasBoard({ params }: { params: Promise<{ id: stri
               </button>
               <div>
                 <h1 className="font-display text-lg text-fight uppercase">
-                  {categoria.modalidade}
+                  {getModalityLabel(categoria.modality)}
                 </h1>
                 <p className="font-ui text-xs text-fight-secondary">
-                  {categoria.peso} • {categoria.nivel}
+                  {categoria.weightRange}kg • {categoria.level}
                 </p>
               </div>
             </div>
@@ -105,14 +189,19 @@ export default function CasarLutasBoard({ params }: { params: Promise<{ id: stri
                 )}
               >
                 <p className="font-bold text-sm mb-1" style={{ fontFamily: "var(--font-oswald)" }}>
-                  {atleta.nome.toUpperCase()}
+                  {atleta.fullName.toUpperCase()}
                 </p>
                 <p className="text-xs text-muted-foreground mb-2">
-                  {atleta.equipe}
+                  {atleta.team}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {atleta.peso} • {atleta.vitorias}V-{atleta.derrotas}D
+                  {atleta.weight}kg • {atleta.totalFights} lutas
                 </p>
+                {atleta.recordNotes && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {atleta.recordNotes}
+                  </p>
+                )}
               </button>
             ))}
           </div>
@@ -138,15 +227,17 @@ export default function CasarLutasBoard({ params }: { params: Promise<{ id: stri
           <Button
             className="w-full h-12"
             style={{ fontFamily: "var(--font-oswald)" }}
-            disabled={selectedAtletas.length !== 2}
-            onClick={() => {
-              if (selectedAtletas.length === 2) {
-                const atletasSelecionados = atletas.filter(a => selectedAtletas.includes(a.id))
-                router.push(`/dashboard/lutas/${id}/montar-card?atleta1=${atletasSelecionados[0].id}&atleta2=${atletasSelecionados[1].id}`)
-              }
-            }}
+            disabled={selectedAtletas.length !== 2 || creating}
+            onClick={handleConfirmarLuta}
           >
-            CONFIRMAR LUTA
+            {creating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                CONFIRMANDO...
+              </>
+            ) : (
+              "CONFIRMAR LUTA"
+            )}
           </Button>
         </main>
       </div>

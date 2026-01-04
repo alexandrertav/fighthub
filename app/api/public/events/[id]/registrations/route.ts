@@ -66,6 +66,10 @@ export async function POST(
       title: `Inscrição - ${event.title}`,
       amount: event.price,
       registrationId: reg._id.toString(),
+      payer: {
+        name: fullName,
+        email: `${fullName.toLowerCase().replace(/\s+/g, '.')}@temp.fighthub.com`,
+      },
     });
 
     const payment = await Payment.create({
