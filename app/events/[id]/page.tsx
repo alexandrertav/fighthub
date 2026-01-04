@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { use } from "react"
+import { useRouter } from "next/navigation"
 import { EventBanner } from "@/components/domain/event-banner"
 import { FightCard } from "@/components/domain/fight-card"
 import { Button } from "@/components/ui/button"
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription, ModalFooter } from "@/components/ui/modal"
-import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { AppShell } from "@/components/layout/app-shell"
 import { apiClient } from "@/lib/api"
@@ -14,8 +14,8 @@ import { Event, Bout, Registration } from "@/lib/types"
 
 export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<"card" | "categories" | "inscriptions">("card")
-  const [showInscriptionModal, setShowInscriptionModal] = useState(false)
   const [showMatchmakingModal, setShowMatchmakingModal] = useState(false)
   
   const [event, setEvent] = useState<Event | null>(null)
@@ -23,20 +23,6 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const [registrations, setRegistrations] = useState<Registration[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  
-  // Form state para inscrição
-  const [formData, setFormData] = useState({
-    fullName: "",
-    age: "",
-    weight: "",
-    height: "",
-    totalFights: "",
-    recordNotes: "",
-    team: "",
-    level: "AMADOR" as "AMADOR" | "SEMI_PRO",
-    modality: "MUAY_THAI" as "BOXE" | "MUAY_THAI"
-  })
-  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     async function loadEventData() {
@@ -66,45 +52,6 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     loadEventData()
   }, [id])
 
-  // Abre modal de inscrição se houver parâmetro na URL
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('inscricao') === 'true') {
-      setShowInscriptionModal(true)
-    }
-  }, [])
-
-  const handleSubmitInscription = async () => {
-    if (!event) return
-    
-    try {
-      setSubmitting(true)
-      
-      const response = await apiClient.post<{ registrationId: string; checkoutUrl: string }>(
-        `/api/public/events/${event.id}/registrations`,
-        {
-          fullName: formData.fullName,
-          age: parseInt(formData.age),
-          weight: parseFloat(formData.weight),
-          height: parseFloat(formData.height),
-          totalFights: parseInt(formData.totalFights),
-          recordNotes: formData.recordNotes || undefined,
-          team: formData.team,
-          level: formData.level,
-          modality: formData.modality
-        }
-      )
-      
-      // Redireciona para o checkout do Mercado Pago
-      window.location.href = response.checkoutUrl
-      
-    } catch (err) {
-      console.error("Erro ao criar inscrição:", err)
-      alert("Erro ao criar inscrição: " + (err instanceof Error ? err.message : "Erro desconhecido"))
-    } finally {
-      setSubmitting(false)
-    }
-  }
 
   if (loading) {
     return (
@@ -152,7 +99,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           <div className="container mx-auto px-4 py-4">
             <div className="flex flex-wrap gap-3">
               <Button 
-                onClick={() => setShowInscriptionModal(true)} 
+                onClick={() => router.push(`/events/${id}/inscricao`)} 
                 className="bg-fight-accent hover:bg-fight-accent-hover text-white font-display uppercase"
               >
                 INSCREVER-SE
@@ -312,145 +259,6 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           )}
 
         </div>
-
-        {/* Inscription Modal */}
-        <Modal open={showInscriptionModal} onOpenChange={setShowInscriptionModal}>
-        <ModalContent className="bg-fight-surface border-2 border-fight max-h-[90vh] overflow-y-auto">
-          <ModalHeader>
-            <ModalTitle className="font-display text-fight uppercase">INSCREVER-SE NO EVENTO</ModalTitle>
-            <ModalDescription className="font-ui text-fight-secondary">
-              Preencha as informações para se inscrever. Você será redirecionado para o pagamento.
-            </ModalDescription>
-          </ModalHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="font-ui text-sm font-medium mb-2 block text-fight-secondary">Nome Completo *</label>
-              <Input 
-                value={formData.fullName}
-                onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-                placeholder="Seu nome completo"
-                className="bg-fight-black border-fight hover:border-fight-hover focus:border-fight-accent text-fight"
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="font-ui text-sm font-medium mb-2 block text-fight-secondary">Idade *</label>
-                <Input 
-                  type="number"
-                  value={formData.age}
-                  onChange={(e) => setFormData({...formData, age: e.target.value})}
-                  placeholder="Ex: 25"
-                  className="bg-fight-black border-fight hover:border-fight-hover focus:border-fight-accent text-fight"
-                />
-              </div>
-              <div>
-                <label className="font-ui text-sm font-medium mb-2 block text-fight-secondary">Peso (kg) *</label>
-                <Input 
-                  type="number"
-                  step="0.1"
-                  value={formData.weight}
-                  onChange={(e) => setFormData({...formData, weight: e.target.value})}
-                  placeholder="Ex: 75.5"
-                  className="bg-fight-black border-fight hover:border-fight-hover focus:border-fight-accent text-fight"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="font-ui text-sm font-medium mb-2 block text-fight-secondary">Altura (cm) *</label>
-                <Input 
-                  type="number"
-                  value={formData.height}
-                  onChange={(e) => setFormData({...formData, height: e.target.value})}
-                  placeholder="Ex: 175"
-                  className="bg-fight-black border-fight hover:border-fight-hover focus:border-fight-accent text-fight"
-                />
-              </div>
-              <div>
-                <label className="font-ui text-sm font-medium mb-2 block text-fight-secondary">Total de Lutas *</label>
-                <Input 
-                  type="number"
-                  value={formData.totalFights}
-                  onChange={(e) => setFormData({...formData, totalFights: e.target.value})}
-                  placeholder="Ex: 5"
-                  className="bg-fight-black border-fight hover:border-fight-hover focus:border-fight-accent text-fight"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="font-ui text-sm font-medium mb-2 block text-fight-secondary">Equipe/Academia *</label>
-              <Input 
-                value={formData.team}
-                onChange={(e) => setFormData({...formData, team: e.target.value})}
-                placeholder="Nome da sua equipe"
-                className="bg-fight-black border-fight hover:border-fight-hover focus:border-fight-accent text-fight"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="font-ui text-sm font-medium mb-2 block text-fight-secondary">Modalidade *</label>
-                <select 
-                  value={formData.modality}
-                  onChange={(e) => setFormData({...formData, modality: e.target.value as "BOXE" | "MUAY_THAI"})}
-                  className="w-full px-4 py-2 bg-fight-black border border-fight hover:border-fight-hover focus:border-fight-accent text-fight rounded-md font-ui"
-                >
-                  <option value="MUAY_THAI">Muay Thai</option>
-                  <option value="BOXE">Boxe</option>
-                </select>
-              </div>
-              <div>
-                <label className="font-ui text-sm font-medium mb-2 block text-fight-secondary">Nível *</label>
-                <select 
-                  value={formData.level}
-                  onChange={(e) => setFormData({...formData, level: e.target.value as "AMADOR" | "SEMI_PRO"})}
-                  className="w-full px-4 py-2 bg-fight-black border border-fight hover:border-fight-hover focus:border-fight-accent text-fight rounded-md font-ui"
-                >
-                  <option value="AMADOR">Amador</option>
-                  <option value="SEMI_PRO">Semi-Pro</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="font-ui text-sm font-medium mb-2 block text-fight-secondary">Cartel/Observações</label>
-              <Input 
-                value={formData.recordNotes}
-                onChange={(e) => setFormData({...formData, recordNotes: e.target.value})}
-                placeholder="Ex: 3V-2D-0E ou outras informações relevantes"
-                className="bg-fight-black border-fight hover:border-fight-hover focus:border-fight-accent text-fight"
-              />
-            </div>
-
-            {event && event.price > 0 && (
-              <div className="bg-fight-black border border-fight-accent rounded-lg p-4">
-                <p className="font-ui text-sm text-fight-secondary">Valor da inscrição:</p>
-                <p className="font-display text-2xl text-fight-accent">R$ {event.price.toFixed(2)}</p>
-              </div>
-            )}
-          </div>
-          <ModalFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowInscriptionModal(false)}
-              disabled={submitting}
-              className="border-fight hover:border-fight-hover bg-transparent text-fight font-display uppercase"
-            >
-              CANCELAR
-            </Button>
-            <Button
-              onClick={handleSubmitInscription}
-              disabled={submitting || !formData.fullName || !formData.age || !formData.weight || !formData.height || !formData.team}
-              className="bg-fight-accent hover:bg-fight-accent-hover text-white font-display uppercase"
-            >
-              {submitting ? "PROCESSANDO..." : "IR PARA PAGAMENTO"}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
 
         {/* Matchmaking Modal */}
         <Modal open={showMatchmakingModal} onOpenChange={setShowMatchmakingModal}>
