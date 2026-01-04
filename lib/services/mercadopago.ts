@@ -27,7 +27,10 @@ export class MercadoPagoService {
     const body: any = {
       items: [
         { 
+          id: params.registrationId,
           title: params.title, 
+          description: params.title,
+          category_id: "services",
           quantity: 1, 
           unit_price: params.amount,
           currency_id: "BRL"
@@ -41,6 +44,8 @@ export class MercadoPagoService {
         default_installments: 1
       },
       statement_descriptor: "FIGHTHUB",
+      binary_mode: false,
+      expires: false,
     };
 
     if (params.payer) {
