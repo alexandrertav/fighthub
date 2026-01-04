@@ -76,6 +76,7 @@ export async function POST(
       registrationId: reg._id,
       amount: event.price,
       mpPreferenceId: pref.preferenceId,
+      checkoutUrl: pref.checkoutUrl,
       status: "pending",
     });
 

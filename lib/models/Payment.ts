@@ -8,6 +8,7 @@ export interface IPayment extends Document {
   amount: number;
   mpPreferenceId: string;
   mpPaymentId?: string;
+  checkoutUrl?: string;
   status: PaymentStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -15,10 +16,11 @@ export interface IPayment extends Document {
 
 const PaymentSchema = new Schema<IPayment>(
   {
-    registrationId: { type: Schema.Types.ObjectId, required: true, index: true },
+    registrationId: { type: Schema.Types.ObjectId, ref: "Registration", required: true, index: true },
     amount: { type: Number, required: true },
     mpPreferenceId: { type: String, required: true },
     mpPaymentId: { type: String, index: true },
+    checkoutUrl: { type: String },
     status: { type: String, default: "pending" },
   },
   { timestamps: true }

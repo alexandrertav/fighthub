@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { Registration } from "@/lib/models/Registration";
+import { Payment } from "@/lib/models/Payment";
 
 export const runtime = "nodejs";
 
@@ -12,16 +13,22 @@ export async function GET(
     await connectDB();
 
     const { id } = await params;
-    const reg = await Registration.findById(id).lean();
+    const registration = await Registration.findById(id).lean();
 
-    if (!reg) {
+    if (!registration) {
       return NextResponse.json({ error: "Inscrição não encontrada" }, { status: 404 });
     }
 
+    // Buscar payment para pegar checkoutUrl
+    const payment = registration.paymentId
+      ? await Payment.findById(registration.paymentId).lean()
+      : null;
+
     return NextResponse.json({
-      registrationId: reg._id.toString(),
-      status: reg.status,
-      matchStatus: reg.matchStatus,
+      registrationId: registration._id.toString(),
+      status: registration.status,
+      matchStatus: registration.matchStatus,
+      checkoutUrl: payment?.checkoutUrl || null,
     });
   } catch (error: any) {
     console.error("Erro ao buscar status:", error);

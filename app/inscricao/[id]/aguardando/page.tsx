@@ -17,6 +17,7 @@ export default function PaymentStatusPage({ params }: { params: Promise<{ id: st
   const [status, setStatus] = useState<{
     registrationStatus: string
     matchStatus: string
+    checkoutUrl: string | null
   } | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -27,11 +28,13 @@ export default function PaymentStatusPage({ params }: { params: Promise<{ id: st
           registrationId: string
           status: string
           matchStatus: string
+          checkoutUrl: string | null
         }>(`/api/public/registrations/${registrationId}/status`)
         
         setStatus({
           registrationStatus: data.status,
-          matchStatus: data.matchStatus
+          matchStatus: data.matchStatus,
+          checkoutUrl: data.checkoutUrl
         })
       } catch (err) {
         console.error("Erro ao verificar status:", err)
@@ -147,6 +150,16 @@ export default function PaymentStatusPage({ params }: { params: Promise<{ id: st
 
               {/* Actions */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                {/* Botão para retornar ao pagamento se ainda estiver pendente */}
+                {status?.registrationStatus === "PENDING_PAYMENT" && status?.checkoutUrl && (
+                  <Button 
+                    onClick={() => window.location.href = status.checkoutUrl!}
+                    className="bg-fight-accent hover:bg-fight-accent-hover text-white font-display uppercase w-full sm:w-auto"
+                  >
+                    VOLTAR PARA O PAGAMENTO
+                  </Button>
+                )}
+                
                 <Link href="/events">
                   <Button 
                     variant="outline"
